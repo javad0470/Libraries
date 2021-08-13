@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.login.LoginFragment"
+    android:background="@color/background">
+
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="244dp"
+        android:fontFamily="@font/iran_sans"
+        android:text="لطفا شماره موبایل خود را وارد نمایید"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:textColor="@color/white"
+        android:padding="8dp"
+        android:id="@+id/edt_enter_phone_login"
+        android:layout_width="0dp"
+        android:layout_height="70dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/edt_style"
+        android:fontFamily="@font/iran_sans"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+    <Button
+        android:backgroundTint="@color/button"
+        android:id="@+id/btn_login_login"
+        android:background="@drawable/btn_style"
+        android:fontFamily="@font/iran_sans"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:text="ورود"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="@+id/edt_enter_phone_login"
+        app:layout_constraintStart_toStartOf="@+id/edt_enter_phone_login"
+        app:layout_constraintTop_toBottomOf="@+id/edt_enter_phone_login" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
