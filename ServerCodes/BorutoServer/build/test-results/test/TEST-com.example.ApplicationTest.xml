@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.ApplicationTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2021-12-25T15:56:23" hostname="LAPTOP-V2C34IB6" time="0.849">
+  <properties/>
+  <testcase name="testRoot" classname="com.example.ApplicationTest" time="0.499"/>
+  <testcase name="access search heroes endpoint, query hero name, assert multiple heroes result" classname="com.example.ApplicationTest" time="0.297"/>
+  <testcase name="access all heroes endpoint, query invalid page number, assert error" classname="com.example.ApplicationTest" time="0.006"/>
+  <testcase name="access search heroes endpoint, query non existing hero, assert empty list as a result" classname="com.example.ApplicationTest" time="0.006"/>
+  <testcase name="access search heroes endpoint, query hero name, assert single hero result" classname="com.example.ApplicationTest" time="0.005"/>
+  <testcase name="access search heroes endpoint, query an empty text, assert empty list as a result" classname="com.example.ApplicationTest" time="0.005"/>
+  <testcase name="access all heroes endpoint, query all pages, assert correct information" classname="com.example.ApplicationTest" time="0.016"/>
+  <testcase name="access non existing endpoint, assert non found" classname="com.example.ApplicationTest" time="0.008"/>
+  <testcase name="access all heroes endpoint, query non existing page number, assert error" classname="com.example.ApplicationTest" time="0.006"/>
+  <system-out><![CDATA[2021-12-25 19:26:24.097 [Test worker] INFO  ktor.test - Autoreload is disabled because the development mode is off.
+2021-12-25 19:26:24.109 [Test worker] INFO  ktor.test - Application started in 0.083 seconds.
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
