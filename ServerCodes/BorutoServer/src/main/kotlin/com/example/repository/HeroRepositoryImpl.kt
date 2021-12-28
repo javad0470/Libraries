@@ -398,14 +398,14 @@ class HeroRepositoryImpl : HeroRepository {
         )
     )
 
-
     override suspend fun getAllHeroes(page: Int): ApiResponse {
         return ApiResponse(
             success = true,
             message = "ok",
             prevPage = calculatePage(page = page)[PREV_PAGE_KEY],
             nextPage = calculatePage(page = page)[NEXT_PAGE_KEY],
-            heroes = heroes[page]!!
+            heroes = heroes[page]!!,
+            lastUpdated = System.currentTimeMillis()
         )
     }
 
