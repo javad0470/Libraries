@@ -1,58 +1,49 @@
 package com.example.barbershop.presentation.component.calendar
 
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.aminography.primecalendar.common.CalendarFactory
-import com.aminography.primecalendar.common.CalendarType
 import com.aminography.primecalendar.common.toPersian
 import com.aminography.primecalendar.persian.PersianCalendar
 import com.example.barbershop.ui.theme.iranSans
 import com.example.barbershop.ui.theme.itemsSurfaceColor
 import com.example.barbershop.ui.theme.textColor
-import saman.zamani.persiandate.PersianDate
 import java.util.*
 
 @Composable
 fun Kalendar(
+    modifier: Modifier = Modifier,
+    kalendarViewModel: KalendarViewModel = hiltViewModel(),
+    cardRoundedCornerShape: RoundedCornerShape = RoundedCornerShape(0.dp),
     completeSelectedDate: (String) -> Unit,
+    selectedDate: (String) -> Unit,
 ) {
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, start = 12.dp, end = 12.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "انتخاب تاریخ",
-                fontFamily = iranSans,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                color = MaterialTheme.colors.textColor
-            )
-        }
-
-        KalendarContent(completeSelectedDate = completeSelectedDate)
-    }
+    KalendarContent(
+        modifier = modifier,
+        completeSelectedDate = completeSelectedDate,
+        cardRoundedCornerShape = cardRoundedCornerShape,
+        kalendarViewModel = kalendarViewModel,
+        selectedDate = selectedDate
+    )
 }
 
 @Composable
 fun KalendarContent(
-    kalendarViewModel: KalendarViewModel = hiltViewModel(),
+    modifier: Modifier,
+    cardRoundedCornerShape: RoundedCornerShape,
+    kalendarViewModel: KalendarViewModel,
     completeSelectedDate: (String) -> Unit,
+    selectedDate: (String) -> Unit,
 ) {
     val calendar = Calendar.getInstance().toPersian()
     var year by remember { mutableStateOf(calendar.year) }
@@ -70,11 +61,8 @@ fun KalendarContent(
     calendar.set(year = year, month = month, dayOfMonth = 20, 0, 0, 0)
 
     Card(
-        modifier = Modifier
-            .padding(12.dp)
-            .fillMaxWidth()
-            .wrapContentHeight(),
-        shape = RoundedCornerShape(12.dp),
+        modifier = modifier,
+        shape = cardRoundedCornerShape,
         backgroundColor = MaterialTheme.colors.itemsSurfaceColor
     ) {
         Column(
@@ -113,6 +101,7 @@ fun KalendarContent(
             KalendarWeek()
 
             Spacer(modifier = Modifier.height(8.dp))
+
             KalendarDays(
                 selectedDate = { selectedDate ->
                     calendar.set(
@@ -123,7 +112,8 @@ fun KalendarContent(
                         0,
                         0
                     )
-                    completeSelectedDate.invoke(calendar.longDateString)
+                    completeSelectedDate(calendar.longDateString)
+                    selectedDate("$year/$month/$selectedDate")
                 },
                 startDayOfWeek = kalendarViewModel
                     .getFirstDayOfMonth(
@@ -135,5 +125,20 @@ fun KalendarContent(
             )
         }
     }
+}
+
+
+@Preview
+@Composable
+fun KalendarPreview() {
+    KalendarContent(
+        completeSelectedDate = {},
+        selectedDate = {},
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+        cardRoundedCornerShape = RoundedCornerShape(0.dp),
+        kalendarViewModel = hiltViewModel()
+    )
 }
 

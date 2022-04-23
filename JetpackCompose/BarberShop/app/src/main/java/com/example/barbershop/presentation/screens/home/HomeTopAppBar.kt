@@ -16,19 +16,20 @@ import com.example.barbershop.ui.theme.topAppbarContentColor
 
 @Composable
 fun HomeTopAppBar(
+    modifier: Modifier = Modifier,
     onSearchClicked: () -> Unit,
 ) {
     TopAppBar(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         backgroundColor = MaterialTheme.colors.topAppbarColor,
         title = {
             Text(
-                modifier = Modifier.padding(top = 2.dp),
                 text = "سلمونی",
                 fontFamily = iranSans,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                color = MaterialTheme.colors.topAppbarContentColor
+                color = MaterialTheme.colors.topAppbarContentColor,
+                maxLines = 1,
             )
         },
         actions = {

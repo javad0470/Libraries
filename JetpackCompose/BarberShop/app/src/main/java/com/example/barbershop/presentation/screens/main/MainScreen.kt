@@ -1,7 +1,8 @@
 package com.example.barbershop.presentation.screens.main
 
 import android.util.Log
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Scaffold
@@ -10,45 +11,38 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.barbershop.presentation.screens.account.AccountScreen
-import com.example.barbershop.presentation.screens.destinations.NoConnectionScreenDestination
 import com.example.barbershop.presentation.screens.notification.NotificationScreen
 import com.example.barbershop.presentation.screens.favorite.FavoriteScreen
 import com.example.barbershop.presentation.screens.home.HomeScreen
 import com.example.barbershop.utils.BottomNavigationItems
-import com.example.barbershop.utils.ConnectionState
 import com.example.barbershop.viewmodels.SharedViewModel
-import com.google.accompanist.insets.navigationBarsPadding
-import com.google.accompanist.insets.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.example.barbershop.presentation.screens.account.AccountViewModel
+import com.example.barbershop.presentation.screens.registration.RegistrationViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+@ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
-@Destination
+@Destination()
 @Composable
 fun MainScreen(
     navigator: DestinationsNavigator,
+    accountViewModel: AccountViewModel,
     sharedViewModel: SharedViewModel = hiltViewModel(),
 ) {
-    Log.d("Kotlin", sharedViewModel.connectionState.value.toString())
-    when (sharedViewModel.connectionState.value) {
-        true -> {
-           // navigator.popBackStack()
-        }
-        false -> {
-          //  navigator.navigate(NoConnectionScreenDestination)
-        }
-
-    }
-
     MainScreenContent(
         navigator = navigator,
-        sharedViewModel = sharedViewModel
+        sharedViewModel = sharedViewModel,
+        accountViewModel = accountViewModel
     )
 }
 
+@ExperimentalFoundationApi
 @ExperimentalComposeUiApi
 @ExperimentalPagerApi
 @ExperimentalMaterialApi
@@ -56,6 +50,7 @@ fun MainScreen(
 fun MainScreenContent(
     navigator: DestinationsNavigator,
     sharedViewModel: SharedViewModel,
+    accountViewModel: AccountViewModel,
 ) {
     Scaffold(
         modifier = Modifier
@@ -79,14 +74,15 @@ fun MainScreenContent(
                         )
                     }
                     BottomNavigationItems.Favorite.route -> {
-                        FavoriteScreen()
+                        FavoriteScreen(navigator = navigator)
                     }
                     BottomNavigationItems.BookingPlan.route -> {
-                        NotificationScreen()
+                        NotificationScreen(navigator = navigator)
                     }
                     BottomNavigationItems.Account.route -> {
                         AccountScreen(
-                            navigator = navigator
+                            navigator = navigator,
+                            accountViewModel = accountViewModel
                         )
                     }
                 }
