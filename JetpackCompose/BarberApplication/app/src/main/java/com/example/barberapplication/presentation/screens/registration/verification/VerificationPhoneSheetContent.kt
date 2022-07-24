@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.barberapplication.presentation.component.OtpComponent
 import com.example.barberapplication.ui.theme.*
-import com.google.accompanist.insets.navigationBarsWithImePadding
 
 @ExperimentalComposeUiApi
 @Composable
@@ -33,7 +32,7 @@ fun VerificationPhoneNumberSheetContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsWithImePadding()
+            .imePadding()
             .height(325.dp)
     ) {
         Surface(
