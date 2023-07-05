@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.barberapplication.ui.theme.BarberShopTheme
 import com.example.barberapplication.ui.theme.iranSans
 import com.example.barberapplication.ui.theme.otpBorderStrokeColor
 import kotlinx.coroutines.delay
@@ -34,10 +35,11 @@ import kotlinx.coroutines.launch
 @ExperimentalComposeUiApi
 @Composable
 fun OtpComponent(
-    value: (String) -> Unit,
+    value: String,
+    onValueChanged: (String) -> Unit,
 ) {
-
-    val (editValue, setEditValue) = remember { mutableStateOf("") }
+    // val (editValue, setEditValue) = remember { mutableStateOf("") }
+    val setEditValue by remember { mutableStateOf("") }
     val otpLength = remember { 5 }
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -46,11 +48,11 @@ fun OtpComponent(
         modifier = Modifier
             .size(0.dp)
             .focusRequester(focusRequester = focusRequester),
-        value = editValue,
+        value = value,
         onValueChange = {
             if (it.length <= otpLength) {
-                setEditValue.invoke(it)
-                value.invoke(it)
+                // setEditValue.invoke(it)
+                onValueChanged.invoke(it)
             }
         },
         singleLine = true,
@@ -72,14 +74,17 @@ fun OtpComponent(
         (0 until otpLength).map { index ->
             OtpCell(
                 modifier = Modifier
-                    .padding(start = 6.dp, end = 6.dp)
+                    .padding(
+                        start = BarberShopTheme.dimens.grid_0_25 + BarberShopTheme.dimens.grid_0_5,
+                        end = BarberShopTheme.dimens.grid_0_25 + BarberShopTheme.dimens.grid_0_5
+                    )
                     .size(50.dp)
                     .clickable {
                         focusRequester.requestFocus()
                         keyboard?.show()
                     },
-                value = editValue.getOrNull(index)?.toString() ?: "",
-                isCursorVisible = editValue.length == index
+                value = value.getOrNull(index)?.toString() ?: "",
+                isCursorVisible = value.length == index
             )
         }
     }
@@ -124,7 +129,7 @@ fun OtpCell(
                 color = Color.Black,
                 fontFamily = iranSans,
                 fontWeight = FontWeight.Medium,
-                fontSize = 16.sp,
+                fontSize = BarberShopTheme.fontSize.size_16,
                 textAlign = TextAlign.Center,
             )
         }
@@ -135,7 +140,8 @@ fun OtpCell(
 @Preview(showBackground = true)
 @Composable
 fun OtpComponentPreview() {
-    OtpComponent {
-        Log.d("Kotlin", it)
-    }
+    OtpComponent(
+        value = "12345",
+        onValueChanged = {}
+    )
 }

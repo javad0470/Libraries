@@ -1,9 +1,14 @@
 package com.example.barberapplication.presentation.screens.registration.verification
 
+import android.app.Activity
+import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -11,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material.SnackbarDefaults.backgroundColor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Smartphone
@@ -21,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -33,13 +40,38 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.barberapplication.R
+import com.example.barberapplication.presentation.component.LottieView
+import com.example.barberapplication.presentation.component.MessageBar
+import com.example.barberapplication.presentation.screens.destinations.VerificationCodeScreenDestination
+import com.example.barberapplication.presentation.screens.registration.RegistrationViewModel
 import com.example.barberapplication.ui.theme.*
+import com.example.barberapplication.utils.Constant.LONG_DURATION
+import com.example.barberapplication.utils.Constant.NOT_EXPIRED_CODE
+import com.example.barberapplication.utils.Constant.PHONE_NUMBER_INVALID
+import com.example.barberapplication.utils.Constant.PHONE_REQUIRED
+import com.example.barberapplication.utils.Constant.REQUEST_VALUES_INVALID
+import com.example.barberapplication.utils.Constant.SEND_CODE_FAILED
+import com.example.barberapplication.utils.Constant.SIGN_UP_REQUIRED
+import com.example.barberapplication.utils.Constant.SUCCESSFULLY
+import com.example.barberapplication.utils.Constant.TOO_MANY_REQUESTS
+import com.example.barberapplication.utils.Constant.UNEXPECTED_ERROR
+import com.example.barberapplication.utils.HandleHttpResponse
+import com.example.barberapplication.utils.MessageBarType
+import com.example.barberapplication.utils.RequestState
+import com.example.barberapplication.viewmodels.SharedViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import io.ktor.client.features.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+@ExperimentalAnimationApi
+@ExperimentalFoundationApi
 @ExperimentalPagerApi
 @ExperimentalComposeUiApi
 @ExperimentalMaterialApi
@@ -47,190 +79,209 @@ import kotlinx.coroutines.launch
 @Composable
 fun VerificationPhoneNumberScreen(
     navigator: DestinationsNavigator,
+    registrationViewModel: RegistrationViewModel = hiltViewModel(),
+    sharedViewModel: SharedViewModel,
 ) = CompositionLocalProvider(
     LocalLayoutDirection provides LayoutDirection.Ltr
 ) {
-    var phone by remember {
-        mutableStateOf("")
+    val sendCodeResponse = registrationViewModel.sendCodeResponse.collectAsState().value
+    var loadingState by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as Activity
+
+    BackHandler {
+        activity.finish()
     }
-    val scope = rememberCoroutineScope()
-    val bottomSheetScaffoldState = rememberBottomSheetScaffoldState()
+
+    LaunchedEffect(key1 = sendCodeResponse) {
+        when (sendCodeResponse) {
+            is RequestState.Idle -> loadingState = false
+            is RequestState.Loading -> loadingState = true
+            is RequestState.Success -> {
+                loadingState = false
+                Log.d("Kotlin", "VerificationPhone: ${sendCodeResponse.data}")
+                handleSuccessState(
+                    navigator = navigator,
+                    registrationViewModel = registrationViewModel,
+                    sharedViewModel = sharedViewModel,
+                    remainingTime = sendCodeResponse.data.result?.remainingTime ?: 0,
+                    contentType = sendCodeResponse.data.contentType,
+                )
+                registrationViewModel.cleanSendCodeResponse()
+            }
+            is RequestState.Error -> {
+                Log.d("Kotlin", sendCodeResponse.message.toString())
+                loadingState = false
+                registrationViewModel.messageBarState.update { messageBar ->
+                    messageBar.copy(
+                        messageBarType = MessageBarType.Warning,
+                        message = when (sendCodeResponse.message) {
+                            is ClientRequestException -> HandleHttpResponse
+                                .clientRequestException(sendCodeResponse.message.response)
+                            is ServerResponseException -> "خطای غیرمنتظره از سمت سرور"
+                            is Exception -> "خطای غیر منتظره"
+                            else -> "خطای غیر منتظره"
+                        }
+                    )
+                }
+                registrationViewModel.cleanSendCodeResponse()
+            }
+        }
+    }
+
+    VerificationPhoneNumberUi(
+        registrationViewModel = registrationViewModel,
+        loadingState = loadingState,
+        onCloseClicked = {
+            sharedViewModel.userPhone = ""
+        },
+        phone = sharedViewModel.userPhone,
+        onTextChange = {
+            if (it.length >= 12) {
+                sharedViewModel.userPhone.dropLast(11)
+            } else {
+                sharedViewModel.userPhone = it
+            }
+        },
+    )
+
+
+}
+
+@ExperimentalPagerApi
+@ExperimentalComposeUiApi
+@ExperimentalMaterialApi
+@Composable
+fun VerificationPhoneNumberUi(
+    registrationViewModel: RegistrationViewModel,
+    loadingState: Boolean,
+    onCloseClicked: () -> Unit,
+    onTextChange: (String) -> Unit,
+    phone: String,
+) = CompositionLocalProvider(
+    LocalLayoutDirection provides LayoutDirection.Ltr
+) {
+
     val keyboard = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
 
-    BottomSheetScaffold(
-        scaffoldState = bottomSheetScaffoldState,
-        sheetContent = {
 
-            VerificationPhoneNumberSheetContent(
-                onCloseSheetClicked = {
-                    scope.launch(Dispatchers.IO) {
-                        bottomSheetScaffoldState.bottomSheetState.collapse()
-                    }
-                },
-                onConfirmButtonClicked = {
-
-                },
-            )
-
-        },
-        sheetGesturesEnabled = false,
-        sheetPeekHeight = 0.dp,
-        sheetShape = RoundedCornerShape(
-            topStart = 24.dp,
-            topEnd = 24.dp
-        ),
-        content = {
-            VerificationPhoneNumberContent(
+    Scaffold(
+        modifier = Modifier
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .fillMaxSize(),
+        content = { paddingValues ->
+            ConstraintLayout(
                 modifier = Modifier
+                    .padding(paddingValues)
                     .fillMaxSize()
-                    .focusRequester(focusRequester = focusRequester),
-                text = phone,
-                onTextChange = {
-                    phone = it
-                },
-                onCloseClicked = {
-                    phone = ""
-                },
-                onDoneClicked = {
-                    focusManager.clearFocus()
-                    keyboard?.hide()
-                },
-                onButtonClicked = {
-                    scope.launch(Dispatchers.IO) {
-                        bottomSheetScaffoldState.bottomSheetState.expand()
+            ) {
+                VerificationPhoneNumberContent(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .focusRequester(focusRequester = focusRequester),
+                    text = phone,
+                    onTextChange = onTextChange,
+                    onCloseClicked = onCloseClicked,
+                    onDoneClicked = {
                         focusManager.clearFocus()
                         keyboard?.hide()
-                    }
-                }
-            )
+
+                        registrationViewModel.checkPhoneNumberValidation(phone = phone)
+                    },
+                    loadingState = loadingState,
+                )
+
+                MessageBar(messageBarState = registrationViewModel.messageBarState)
+            }
         }
     )
-
 }
 
-@Composable
-fun VerificationPhoneNumberContent(
-    modifier: Modifier,
-    text: String,
-    onTextChange: (String) -> Unit,
-    onCloseClicked: () -> Unit,
-    onDoneClicked: () -> Unit,
-    onButtonClicked: () -> Unit,
+@ExperimentalFoundationApi
+@ExperimentalAnimationApi
+@ExperimentalComposeUiApi
+@ExperimentalMaterialApi
+@ExperimentalPagerApi
+fun handleSuccessState(
+    navigator: DestinationsNavigator,
+    registrationViewModel: RegistrationViewModel,
+    sharedViewModel: SharedViewModel,
+    contentType: String,
+    remainingTime: Int,
 ) {
-    var showCloseIcon by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        VerificationPhoneNumberHeader()
-
-        Spacer(modifier = Modifier.size(16.dp))
-
-        Text(
-            text = "لطفا شماره تلفن همراه خود را وارد نمایید",
-            fontFamily = iranSans,
-            fontWeight = FontWeight.Normal,
-            fontSize = 14.sp,
-            color = MaterialTheme.colors.textColor.copy(0.8f)
-        )
-
-        Spacer(modifier = Modifier.size(16.dp))
-
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp),
-            value = text,
-            onValueChange = onTextChange,
-            textStyle = TextStyle(
-                color = MaterialTheme.colors.textFieldsTextColor,
-                fontFamily = iranSans,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp
-            ),
-            label = {
-                Text(
-                    text = "تلفن همراه",
-                    color = MaterialTheme.colors.textFieldsTextColor.copy(0.6f),
-                    fontFamily = iranSans,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 12.sp
+    when (contentType) {
+        SUCCESSFULLY -> {
+            registrationViewModel.messageBarState.update { messageBar ->
+                messageBar.copy(
+                    messageBarType = MessageBarType.Warning,
+                    message = "کد ورود با موفقیت ارسال شد"
                 )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Smartphone,
-                    contentDescription = "Phone Icon"
+            }
+            sharedViewModel.remainingTime = remainingTime
+            navigator.navigate(VerificationCodeScreenDestination)
+        }
+        NOT_EXPIRED_CODE -> {
+            registrationViewModel.messageBarState.update { messageBar ->
+                messageBar.copy(
+                    messageBarType = MessageBarType.Warning,
+                    message = "کد ورود قبلی هنوز منقضی نشده است"
                 )
-            },
-            trailingIcon = {
-                showCloseIcon = text.isNotEmpty()
-                AnimatedVisibility(
-                    visible = showCloseIcon,
-                    enter = fadeIn(
-                        animationSpec = tween(400)
-                    ),
-                    exit = fadeOut(
-                        animationSpec = tween(400)
-                    )
-                ) {
-                    IconButton(
-                        onClick = onCloseClicked
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close Icon"
-                        )
-                    }
-                }
-            },
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Done,
-                keyboardType = KeyboardType.Phone
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    onDoneClicked.invoke()
-                }
-            ),
-            shape = RoundedCornerShape(12.dp),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = MaterialTheme.colors.textFieldBorderStrokeColor
-            ),
-            singleLine = true
-        )
-
-        Spacer(modifier = Modifier.size(16.dp))
-
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .padding(
-                    start = 24.dp,
-                    end = 24.dp
-                ),
-            onClick = onButtonClicked,
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = MaterialTheme.colors.buttonColor,
-                disabledBackgroundColor = MaterialTheme.colors.inActiveButtonColor,
-                disabledContentColor = if (isSystemInDarkTheme()) Color.White.copy(0.5f) else Color.White
-            ),
-            shape = CircleShape
-        ) {
-            Text(
-                text = "تایید",
-                color = MaterialTheme.colors.buttonContentColor,
-                fontFamily = iranSans,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
+            }
+            sharedViewModel.remainingTime = remainingTime
+            navigator.navigate(VerificationCodeScreenDestination)
+        }
+        SEND_CODE_FAILED -> {
+            registrationViewModel.messageBarState.update { messageBar ->
+                messageBar.copy(
+                    messageBarType = MessageBarType.Warning,
+                    message = "خطا در ارسال کد لطفا مجدد تلاش نمایید"
+                )
+            }
+        }
+        TOO_MANY_REQUESTS -> {
+            registrationViewModel.messageBarState.update { messageBar ->
+                messageBar.copy(
+                    messageBarType = MessageBarType.Warning,
+                    message = "درخواست های پیاپی غیر مجاز"
+                )
+            }
+        }
+        REQUEST_VALUES_INVALID -> {
+            registrationViewModel.messageBarState.update { messageBar ->
+                messageBar.copy(
+                    messageBarType = MessageBarType.Warning,
+                    message = "شماره موبایل صحیح نمی باشد"
+                )
+            }
+        }
+        SIGN_UP_REQUIRED -> {
+            registrationViewModel.messageBarState.update { messageBar ->
+                messageBar.copy(
+                    messageBarType = MessageBarType.Warning,
+                    message = "برای ثبت نام به سایت مراجعه نمایید",
+                    duration = LONG_DURATION
+                )
+            }
+        }
+        UNEXPECTED_ERROR -> {
+            registrationViewModel.messageBarState.update { messageBar ->
+                messageBar.copy(
+                    messageBarType = MessageBarType.Warning,
+                    message = "خطای غیر منتظره از سمت سرور"
+                )
+            }
+        }
+        else -> {
+            registrationViewModel.messageBarState.update { messageBar ->
+                messageBar.copy(
+                    messageBarType = MessageBarType.Warning,
+                    message = "خطای غیر منتظره"
+                )
+            }
         }
     }
-
 }
 
 @Composable
@@ -238,26 +289,12 @@ fun VerificationPhoneNumberHeader() {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp),
+            .height(BarberShopTheme.dimens.verificationPhoneHeader),
         color = MaterialTheme.colors.topAppbarColor
     ) {
-
+        LottieView(
+            modifier = Modifier.fillMaxSize(),
+            lottie = R.raw.welcome
+        )
     }
-}
-
-
-@ExperimentalComposeUiApi
-@ExperimentalMaterialApi
-@Preview(showBackground = true)
-@Composable
-fun VerificationPhoneNumberPreview() {
-    VerificationPhoneNumberContent(
-        modifier = Modifier
-            .fillMaxSize(),
-        text = "",
-        onTextChange = {},
-        onCloseClicked = {},
-        onDoneClicked = {},
-        onButtonClicked = {}
-    )
 }
